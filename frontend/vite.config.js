@@ -2,12 +2,17 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-// https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      srcDir: "src",
+      filename: "custom-sw.js",
+      strategies: "injectManifest",
+      injectManifest: {
+        swSrc: "src/custom-sw.js",
+      },
       includeAssets: [
         "favicon.svg",
         "favicon.ico",
@@ -29,28 +34,29 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
           },
-          {
-            src: "logo-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
         ],
       },
     }),
   ],
   server: {
-    proxy: {
-      "/api": "http://localhost:8000", // Fake CORS
-    },
-    host: true, // bind op 0.0.0.0
+    proxy:
+      mode === "development"
+        ? {
+            "/api": {
+              target: "http://laravel-backend:8000",
+              changeOrigin: true,
+              secure: false,
+            },
+          }
+        : undefined,
+    host: true,
     port: 5173,
+    strictPort: true,
+    hmr: {
+      clientPort: 5173,
+    },
     watch: {
       usePolling: true,
     },
-    strictPort: true,
-    hmr: {
-      clientPort: 5173, // gebruik externe poort voor hot module reloading, niet 80 of 443
-    },
   },
-});
+}));
